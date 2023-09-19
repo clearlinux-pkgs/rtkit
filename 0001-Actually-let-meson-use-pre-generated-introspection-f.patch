@@ -1,0 +1,59 @@
+From bdc6cc2f31c7deca24a7f11a72a21ed3a5e7a4ca Mon Sep 17 00:00:00 2001
+From: Francisco Boni <boboniboni@gmail.com>
+Date: Wed, 24 Nov 2021 22:51:00 -0300
+Subject: [PATCH 1/5] Actually let meson use pre-generated introspection file
+
+Unlike autoconf, meson scripts actually aborted if the program 'xxd' was
+absent regardless of whether the pre-generated introspection file was
+found or not. Make xxd optional, and if it is not found print a warning
+and make the dependency object xml_introspection_h point at the relevant
+file in the source directory instead of generating a new one in the build
+directory. If that file does not exist either, abort.
+---
+ meson.build | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 02e6c73..68fa23c 100644
+--- a/meson.build
++++ b/meson.build
+@@ -13,7 +13,7 @@ add_project_arguments(
+ 
+ cc = meson.get_compiler('c')
+ sh = find_program('sh')
+-xxd = find_program('xxd')
++xxd = find_program('xxd', required: false)
+ 
+ dbus_dep = dependency('dbus-1')
+ libcap_dep = dependency('libcap')
+@@ -80,14 +80,19 @@ config_h = configure_file(
+         configuration: config,
+ )
+ 
+-xml_introspection_h = configure_file(
+-        input: 'org.freedesktop.RealtimeKit1.xml',
+-        output: 'xml-introspection.h',
+-        command: [
+-                sh, '-c', '"$1" -i < "$2" > "$3"', sh,
+-                xxd, '@INPUT@', '@OUTPUT@'
+-        ],
+-)
++if xxd.found()
++        xml_introspection_h = configure_file(
++                input: 'org.freedesktop.RealtimeKit1.xml',
++                output: 'xml-introspection.h',
++                command: [
++                        sh, '-c', '"$1" -i < "$2" > "$3"', sh,
++                        xxd, '@INPUT@', '@OUTPUT@'
++                ],
++        )
++else
++        warning('xxd not found, cannot compile introspection XML. Looking for existing one...')
++        xml_introspection_h = files('xml-introspection.h')
++endif
+ 
+ executable(
+         'rtkit-daemon',
+-- 
+2.42.0
+

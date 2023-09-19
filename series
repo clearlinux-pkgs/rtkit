@@ -1,3 +1,1 @@
-0001-SECURITY-Pass-uid-of-caller-to-polkit.patch
-rtkit-controlgroup.patch
-rtkit-mq_getattr.patch
+0005-rtkit-daemon-Don-t-log-debug-messages-by-default.patch
